@@ -4,5 +4,5 @@ project(NVBenchBenchmarks CUDA)
 
 add_subdirectory(nvbench)
 
-add_executable(launch_bench launch_bench.cu)
-target_link_libraries(launch_bench nvbench::main)
+add_executable(nvbench_kernel_launch launch_bench.cu)
+target_link_libraries(nvbench_kernel_launch nvbench::main)

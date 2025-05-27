@@ -272,7 +272,7 @@ nvbandwidth: sb_micro_path
 
 # Build nvbench
 nvbench: sb_micro_path
-    cd nvbench-benchmarks/nvbench && mkdir -p build && cd build && \
-      cmake .. -DCMAKE_CUDA_ARCHITECTURES=120 && \
-      make -j $(NUM_MAKE_JOBS)
-    cp -v nvbench-benchmarks/nvbench/build/launch_bench $(SB_MICRO_PATH)/bin/
+	cd nvbench-benchmarks/nvbench && mkdir -p build && cd build && \
+	cmake .. -DCMAKE_CUDA_ARCHITECTURES=120 && \
+	make -j $(NUM_MAKE_JOBS)
+	cp -v nvbench-benchmarks/build/nvbench_kernel_launch $(SB_MICRO_PATH)/bin/
