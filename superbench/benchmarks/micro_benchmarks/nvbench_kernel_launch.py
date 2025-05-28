@@ -73,4 +73,4 @@ class NvbenchKernelLaunch(MicroBenchmarkWithInvoke):
         return True
 
 # Register the benchmark
-BenchmarkRegistry.register_benchmark("nvbench_kernel_launch", NvbenchKernelLaunch, platform=Platform.CUDA)
+BenchmarkRegistry.register_benchmark("nvbench-kernel-launch", NvbenchKernelLaunch, platform=Platform.CUDA)

@@ -4,7 +4,7 @@ from superbench.common.utils import logger
 if __name__ == '__main__':
     # Create a benchmark context without parameters
     context = BenchmarkRegistry.create_benchmark_context(
-        'nvbench_kernel_launch',
+        'nvbench-kernel-launch',
         platform=Platform.CUDA
     )
 
