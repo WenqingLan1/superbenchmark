@@ -39,7 +39,6 @@ from superbench.benchmarks.micro_benchmarks.directx_mem_bw_performance import Di
 from superbench.benchmarks.micro_benchmarks.directx_gemm_flops_performance import DirectXGPUCoreFlops
 from superbench.benchmarks.micro_benchmarks.nvbandwidth import NvBandwidthBenchmark
 from superbench.benchmarks.micro_benchmarks.nvbench_kernel_launch import NvbenchKernelLaunch
-# from superbench.benchmarks.micro_benchmarks.nvbench_sleep_kernel import NvbenchSleepKernel
 
 __all__ = [
     'BlasLtBaseBenchmark',
@@ -78,5 +77,4 @@ __all__ = [
     'DirectXGPUCoreFlops',
     'NvBandwidthBenchmark',
     'NvbenchKernelLaunch'
-    # 'NvbenchSleepKernel'
 ]
