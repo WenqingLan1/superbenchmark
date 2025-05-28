@@ -5,8 +5,7 @@ if __name__ == '__main__':
     # Create a benchmark context without parameters
     context = BenchmarkRegistry.create_benchmark_context(
         'nvbench_kernel_launch',
-        platform=Platform.CUDA,
-        parameters=''
+        platform=Platform.CUDA
     )
 
     # Launch the benchmark

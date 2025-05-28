@@ -1,6 +1,22 @@
+import os
+import re
 from superbench.common.utils import logger
-from superbench.benchmarks import BenchmarkRegistry, Platform, ReturnCode
+from superbench.benchmarks import BenchmarkRegistry, ReturnCode, Platform
 from superbench.benchmarks.micro_benchmarks import MicroBenchmarkWithInvoke
+
+def parse_time_to_us(raw: str) -> float:
+    """Helper: parse '123.45 us', '678.9 ns', '0.12 ms' → float µs."""
+    raw = raw.strip()
+    if raw.endswith('%'):
+        return float(raw[:-1])
+    # split “value unit” or “valueunit”
+    m = re.match(r'([\d.]+)\s*([mun]?s)?', raw)
+    if not m:
+        return float(raw)
+    val, unit = float(m.group(1)), (m.group(2) or 'us')
+    if unit == 'ns':  return val / 1e3
+    if unit == 'ms':  return val * 1e3
+    return val
 
 class NvbenchKernelLaunch(MicroBenchmarkWithInvoke):
     """Nvbench benchmark wrapper for SuperBench."""
@@ -10,69 +26,51 @@ class NvbenchKernelLaunch(MicroBenchmarkWithInvoke):
         self._bin_name = "nvbench_kernel_launch"
 
     def _preprocess(self):
-        """Preprocess and validate the benchmark parameters."""
-        # Add any necessary preprocessing logic here
-        return True
-
-    def _benchmark(self):
-        """Run the benchmark."""
-        command = f"{self._bin_name} {self._parameters}"
-        return self._run_command(command)
-
-    def _process_raw_result(self, cmd_idx, raw_output):
-        """Process the raw output from the benchmark.
-
-        Args:
-            cmd_idx (int): The index of the command corresponding with the raw_output.
-            raw_output (str): Raw output string of the micro-benchmark.
-
-        Returns:
-            bool: True if the raw output string is valid and results can be extracted.
+        """Preprocess/preparation operations before the benchmarking.
+        Return:
+            True if _preprocess() succeed.
         """
-        # Store raw data
-        self._result.add_raw_data(f'raw_output_{cmd_idx}', raw_output, self._args.log_raw_data)
-
-        try:
-            # Regular expressions to extract metrics
-            gpu_section_pattern = r"### \[(\d+)\] NVIDIA (\S+)"
-            table_row_pattern = r"\| (\d+)x \| ([\d.]+ \w+) \| ([\d.]+%) \| ([\d.]+ \w+) \| ([\d.]+%) \| (\d+)x \| ([\d.]+ \w+) \|"
-
-            # Parse the raw output
-            current_gpu = None
-            output_lines = raw_output.splitlines()
-            for line in output_lines:
-                line = line.strip()  # Strip leading and trailing spaces
-                gpu_match = re.match(gpu_section_pattern, line)
-                if gpu_match:
-                    current_gpu = f"gpu_{gpu_match.group(1)}"
-                    continue
-
-                row_match = re.match(table_row_pattern, line)
-                if row_match and current_gpu:
-                    # Extract metrics from the matched row
-                    self._result.add_result(f"{current_gpu}_samples", int(row_match.group(1)))
-                    self._result.add_result(f"{current_gpu}_cpu_time", row_match.group(2))
-                    self._result.add_result(f"{current_gpu}_cpu_noise", row_match.group(3))
-                    self._result.add_result(f"{current_gpu}_gpu_time", row_match.group(4))
-                    self._result.add_result(f"{current_gpu}_gpu_noise", row_match.group(5))
-                    self._result.add_result(f"{current_gpu}_batch_samples", int(row_match.group(6)))
-                    self._result.add_result(f"{current_gpu}_batch_gpu_time", row_match.group(7))
-
-            # Check if any results were added
-            if not self._result.result:
-                raise BaseException("No valid results found.")
-
-        except BaseException as e:
-            # Handle parsing errors
-            self._result.set_return_code(ReturnCode.MICROBENCHMARK_RESULT_PARSING_FAILURE)
-            logger.error(
-                'The result format is invalid - round: {}, benchmark: {}, raw output: {}, message: {}.'.format(
-                    self._curr_run_index, self._name, raw_output, str(e)
-                )
-            )
+        if not super()._preprocess():
             return False
 
+        self.__bin_path = os.path.join(self._args.bin_dir, self._bin_name)
+        self._commands = [f"{self.__bin_path}"]
+
+        return True
+
+    def _process_raw_result(self, cmd_idx, raw_output):
+        self._result.add_raw_data(f'raw_output_{cmd_idx}', raw_output, self._args.log_raw_data)
+        try:
+            gpu_section = r"### \[(\d+)\] NVIDIA"
+            row_pat = (
+                r"\| (\d+)x \| ([\d.]+ ?[mun]?s) \| ([\d.]+%) \| "
+                r"([\d.]+ ?[mun]?s) \| ([\d.]+%) \| (\d+)x \| ([\d.]+ ?[mun]?s) \|"
+            )
+            current = None
+            for line in raw_output.splitlines():
+                line = line.strip()
+                g = re.match(gpu_section, line)
+                if g:
+                    current = f"gpu_{g.group(1)}"
+                    continue
+                r = re.match(row_pat, line)
+                if r and current:
+                    self._result.add_result(f"{current}_samples", int(r.group(1)))
+                    self._result.add_result(f"{current}_cpu_time", parse_time_to_us(r.group(2)))
+                    self._result.add_result(f"{current}_cpu_noise", float(r.group(3)[:-1]))
+                    self._result.add_result(f"{current}_gpu_time", parse_time_to_us(r.group(4)))
+                    self._result.add_result(f"{current}_gpu_noise", float(r.group(5)[:-1]))
+                    self._result.add_result(f"{current}_batch_samples", int(r.group(6)))
+                    self._result.add_result(f"{current}_batch_gpu_time", parse_time_to_us(r.group(7)))
+            if not self._result.result:
+                raise RuntimeError("no valid rows parsed")
+        except Exception as e:
+            self._result.set_return_code(ReturnCode.MICROBENCHMARK_RESULT_PARSING_FAILURE)
+            logger.error(
+                f"invalid result format - round:{self._curr_run_index}, bench:{self._name}, msg:{e}\n{raw_output}"
+            )
+            return False
         return True
 
 # Register the benchmark
-BenchmarkRegistry.register_benchmark("nvnvbench_kernel_launch", NvbenchKernelLaunch, Platform.CUDA)
+BenchmarkRegistry.register_benchmark("nvbench_kernel_launch", NvbenchKernelLaunch, platform=Platform.CUDA)

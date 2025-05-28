@@ -276,3 +276,4 @@ nvbench: sb_micro_path
 	cmake .. -DCMAKE_CUDA_ARCHITECTURES=120 && \
 	make -j $(NUM_MAKE_JOBS)
 	cp -v nvbench-benchmarks/build/nvbench_kernel_launch $(SB_MICRO_PATH)/bin/
+	cp -v nvbench-benchmarks/build/lib/libnvbench.so  $(SB_MICRO_PATH)/lib/
