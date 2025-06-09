@@ -2,13 +2,20 @@ from superbench.benchmarks import BenchmarkRegistry, Platform
 from superbench.common.utils import logger
 
 if __name__ == '__main__':
-    # Create a benchmark context without parameters
     context = BenchmarkRegistry.create_benchmark_context(
         'nvbench-kernel-launch',
-        platform=Platform.CUDA
+        platform=Platform.CUDA,
+        parameters=(
+            '--timeout 30 '
+            '--min-samples 10 '
+            '--min-time 1.0 '
+            '--max-noise 0.1 '
+            '--stopping-criterion stdrel '
+            '--throttle-threshold 80 '
+            '--throttle-recovery-delay 1.0'
+        )
     )
 
-    # Launch the benchmark
     benchmark = BenchmarkRegistry.launch_benchmark(context)
     if benchmark:
         logger.info(
