@@ -25,6 +25,7 @@ cuda: common cuda_cutlass cuda_bandwidthTest cuda_nccl_tests cuda_perftest gpcne
 rocm: common rocm_perftest rocm_rccl_tests rocm_rocblas rocm_bandwidthTest rocm_hipblaslt megatron_deepspeed apex_rocm
 cpu: common cpu_perftest cpu_stream
 common: fio
+nvbench_only: nvbench
 
 # non aarch64 specific targets
 ifneq ($(shell uname -m), aarch64)
@@ -272,8 +273,7 @@ nvbandwidth: sb_micro_path
 
 # Build nvbench
 nvbench: sb_micro_path
-	cd nvbench-benchmarks/nvbench && mkdir -p build && cd build && \
+	cd ./nvbench && mkdir -p build && cd build && \
 	cmake .. -DCMAKE_CUDA_ARCHITECTURES=100 -DCMAKE_BUILD_TYPE=Release && \
 	make -j $(NUM_MAKE_JOBS)
-	cp -v nvbench-benchmarks/build/nvbench_kernel_launch $(SB_MICRO_PATH)/bin/
-	cp -v nvbench-benchmarks/build/lib/libnvbench.so  $(SB_MICRO_PATH)/lib/
+	cp -v ./nvbench/build/lib/libnvbench.so  $(SB_MICRO_PATH)/lib/
