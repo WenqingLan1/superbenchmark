@@ -37,6 +37,8 @@ endif
 sb_micro_path:
 	mkdir -p $(SB_MICRO_PATH)/bin
 	mkdir -p $(SB_MICRO_PATH)/lib
+	mkdir -p $(SB_MICRO_PATH)/include/nvbench
+	mkdir -p $(SB_MICRO_PATH)/include/nvbench/detail
 
 # Build cutlass.
 # for cuda 12.8 and later Build from commit 389e493 (3.8 release commit) for blackwell support
@@ -274,6 +276,15 @@ nvbandwidth: sb_micro_path
 # Build nvbench
 nvbench: sb_micro_path
 	cd ./nvbench && mkdir -p build && cd build && \
-	cmake .. -DCMAKE_CUDA_ARCHITECTURES=100 -DCMAKE_BUILD_TYPE=Release && \
-	make -j $(NUM_MAKE_JOBS)
-	cp -v ./nvbench/build/lib/libnvbench.so  $(SB_MICRO_PATH)/lib/
+	cmake                                         \
+	-DCMAKE_INSTALL_PREFIX=$(SB_MICRO_PATH)       \
+	-DCMAKE_CUDA_ARCHITECTURES=100                \
+	-DCMAKE_BUILD_TYPE=Release                    \
+	.. &&                                         \
+	make -j $(NUM_MAKE_JOBS) &&                   \
+	make install
+# install all NVBench headers
+	cp -v    ./nvbench/nvbench/*.cuh  $(SB_MICRO_PATH)/include/nvbench/
+	cp -v    ./nvbench/nvbench/detail/*.cuh  $(SB_MICRO_PATH)/include/nvbench/detail/
+	cp -v    ./nvbench/build/nvbench/*.cuh  $(SB_MICRO_PATH)/include/nvbench/
+	cp -v    ./nvbench/build/nvbench/detail/*.cuh  $(SB_MICRO_PATH)/include/nvbench/detail/

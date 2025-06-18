@@ -1,14 +1,19 @@
-cmake_minimum_required(VERSION 3.20.1)
-project(NVBenchBenchmarks CUDA)
+cmake_minimum_required(VERSION 3.20)
+project(nvbench_kernel_launch LANGUAGES CUDA)
 
-add_subdirectory(nvbench)
+set(SB_MICRO_PATH $ENV{SB_MICRO_PATH}
+    CACHE PATH "where nvbench was installed (bin/, lib/, include/)"
+)
 
-function(nvbench_add_benchmark bench_name bench_src)
-  add_executable(${bench_name} ${bench_src})
-  target_link_libraries(${bench_name} PRIVATE nvbench::main)
-  nvbench_config_target(${bench_name})
-endfunction()
+find_package(nvbench CONFIG REQUIRED
+  PATHS ${SB_MICRO_PATH}/lib/cmake/nvbench
+  NO_DEFAULT_PATH
+)
 
-nvbench_add_benchmark(nvbench_kernel_launch    launch_bench.cu)
-# to add more benchmarks
-# nvbench_add_benchmark(nvbench_example_bench  example_bench.cu)
+add_executable(nvbench_kernel_launch launch_bench.cu)
+target_compile_features(nvbench_kernel_launch PUBLIC cuda_std_17)
+target_link_libraries(nvbench_kernel_launch
+  PRIVATE nvbench::nvbench nvbench::main
+)
+
+install(TARGETS nvbench_kernel_launch RUNTIME DESTINATION bin)
