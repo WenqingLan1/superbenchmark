@@ -1,0 +1,34 @@
+# Devices
+
+## [0] `NVIDIA GB200`
+* SM Version: 1000 (PTX Version: 1000)
+* Number of SMs: 152
+* SM Default Clock Rate: 1200 MHz
+* Global Memory: 187656 MiB Free / 188416 MiB Total
+* Global Memory Bus Peak: 7936 GB/sec (7936-bit DDR @4000MHz)
+* Max Shared Memory: 228 KiB/SM, 48 KiB/Block
+* L2 Cache Size: 132352 KiB
+* Maximum Active Blocks: 32/SM
+* Maximum Active Threads: 2048/SM, 1024/Block
+* Available Registers: 65536/SM, 65536/Block
+* ECC Enabled: Yes
+
+# Log
+
+```
+Run:  [1/1] launch_bench [Device=0]
+Warn: Current measurement timed out (20.00s) while over noise threshold (14.42% > 0.50%)
+Warn: Current measurement timed out (20.00s) before accumulating min_time (0.94s < 2.00s)
+Pass: Cold: 0.005878ms GPU, 0.022181ms CPU, 0.94s total GPU, 20.00s total wall, 160430x 
+Pass: Batch: 0.004024ms GPU, 2.00s total GPU, 2.00s total wall, 497001x
+```
+
+# Benchmark Results
+
+## launch_bench
+
+### [0] NVIDIA GB200
+
+| Samples | CPU Time  | Noise  | GPU Time | Noise  | Samples | Batch GPU |
+|---------|-----------|--------|----------|--------|---------|-----------|
+| 160430x | 22.181 us | 30.44% | 5.878 us | 14.42% | 497001x |  4.024 us |

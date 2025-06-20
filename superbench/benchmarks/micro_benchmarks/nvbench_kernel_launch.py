@@ -138,9 +138,10 @@ class NvbenchKernelLaunch(MicroBenchmarkWithInvoke):
             gpu_section = r"### \[(\d+)\] NVIDIA"
             row_pat = (
                 r"\| (\d+)x \| ([\d.]+ ?[mun]?s) \| ([\d.]+%) \| "
-                r"([\d.]+ ?[mun]?s) \| ([\d.]+%) \| (\d+)x \| ([\d.]+ ?[mun]?s) \|"
+                r"([\d.]+ ?[mun]?s) \| ([\d.]+%) \| (\d+)x \| *([\d.]+ ?[mun]?s) \|"
             )
             current = None
+            parsed_any = False  # Track if any valid rows are parsed
             for line in raw_output.splitlines():
                 line = line.strip()
                 g = re.match(gpu_section, line)
@@ -156,12 +157,14 @@ class NvbenchKernelLaunch(MicroBenchmarkWithInvoke):
                     self._result.add_result(f"{current}_gpu_noise", float(r.group(5)[:-1]))
                     self._result.add_result(f"{current}_batch_samples", int(r.group(6)))
                     self._result.add_result(f"{current}_batch_gpu_time", parse_time_to_us(r.group(7)))
-            if not self._result.result:
-                raise RuntimeError("no valid rows parsed")
+                    parsed_any = True
+            if not parsed_any:
+                logger.error("No valid rows parsed from the raw output.")
+                raise RuntimeError("No valid rows parsed")
         except Exception as e:
             self._result.set_return_code(ReturnCode.MICROBENCHMARK_RESULT_PARSING_FAILURE)
             logger.error(
-                f"invalid result format - round:{self._curr_run_index}, bench:{self._name}, msg:{e}\n{raw_output}"
+                f"Invalid result format - round:{self._curr_run_index}, bench:{self._name}, msg:{e}\n{raw_output}"
             )
             return False
         return True
