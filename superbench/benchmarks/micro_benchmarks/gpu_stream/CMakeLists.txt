@@ -26,6 +26,13 @@ if(CUDAToolkit_FOUND)
     message(STATUS "Found CUDA: " ${CUDAToolkit_VERSION})
 
     include(../cuda_common.cmake)
+    
+    # Override CUDA architectures to support newer CUDA versions
+    # Remove deprecated architectures that are not supported in CUDA 13.0+
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "13.0")
+        set(NVCC_ARCHS_SUPPORTED "75;80;86;89;90;100;103")
+    endif()
+    
     add_executable(gpu_stream ${SOURCES})
     set_property(TARGET gpu_stream PROPERTY CUDA_ARCHITECTURES ${NVCC_ARCHS_SUPPORTED})
     target_include_directories(gpu_stream PRIVATE ${CUDAToolkit_INCLUDE_DIRS})

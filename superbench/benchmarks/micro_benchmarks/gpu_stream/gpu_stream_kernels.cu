@@ -85,7 +85,7 @@ __global__ void CopyKernel(double *tgt, const double *src) {
  * @param[in] src The source array containing the data to be scaled.
  * @param[in] scalar The scalar value used to scale the source data.
  */
-__global__ void ScaleKernel(double *tgt, const double *src, const long scalar) {
+__global__ void ScaleKernel(double *tgt, const double *src, const double scalar) {
     uint64_t index = blockIdx.x * blockDim.x * kNumLoopUnrollAlias + threadIdx.x;
     double val[kNumLoopUnrollAlias];
 #pragma unroll
@@ -93,7 +93,10 @@ __global__ void ScaleKernel(double *tgt, const double *src, const long scalar) {
         Fetch(val[i], src + index + i * blockDim.x);
 #pragma unroll
     for (uint64_t i = 0; i < kNumLoopUnrollAlias; i++) {
-        val[i] *= scalar;
+        val[i] = fma(val[i], scalar, 0.0);  // Use explicit FMA like TRIAD
+    }
+#pragma unroll
+    for (uint64_t i = 0; i < kNumLoopUnrollAlias; i++) {
         Store(tgt + index + i * blockDim.x, val[i]);
     }
 }
