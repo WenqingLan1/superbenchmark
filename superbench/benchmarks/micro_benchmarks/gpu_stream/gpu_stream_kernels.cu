@@ -93,7 +93,7 @@ __global__ void ScaleKernel(double *tgt, const double *src, const double scalar)
         Fetch(val[i], src + index + i * blockDim.x);
 #pragma unroll
     for (uint64_t i = 0; i < kNumLoopUnrollAlias; i++) {
-        val[i] = fma(val[i], scalar, 0.0);  // Use explicit FMA like TRIAD
+        val[i] *= scalar;
     }
 #pragma unroll
     for (uint64_t i = 0; i < kNumLoopUnrollAlias; i++) {
