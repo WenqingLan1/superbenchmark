@@ -565,7 +565,7 @@ template <typename T> int GpuStream::RunStream(std::unique_ptr<BenchArgs<T>> &ar
             double bw = args->size * args->num_loops / args->sub.times_in_ms[i][j] / 1e6;
             std::cout << tag << "_block_" << kThreadsPerBlock[j] << "\t" << bw << "\t";
             
-            if (peak_bw < 0) { # cannot get peak_bw -> prints -1 for efficiency
+            if (peak_bw < 0) { // cannot get peak_bw -> prints -1 for efficiency
                 std::cout << "-1" << std::endl;
             } else {
                 std::cout << std::fixed << std::setprecision(2) << bw / peak_bw * 100 << std::endl;
