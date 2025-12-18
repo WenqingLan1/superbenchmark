@@ -34,7 +34,7 @@ class GpuStream {
     int Run();
 
   private:
-    using BenchArgsVariant = std::variant<std::unique_ptr<BenchArgs<double>>>;
+    using BenchArgsVariant = std::variant<std::unique_ptr<BenchArgs<float>>, std::unique_ptr<BenchArgs<double>>>;
     std::vector<BenchArgsVariant> bench_args_;
     Opts opts_;
 

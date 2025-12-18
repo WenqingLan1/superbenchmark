@@ -420,8 +420,10 @@ int GpuStream::RunStreamKernel(std::unique_ptr<BenchArgs<T>> &args, Kernel kerne
     int size_factor = 2;
 
     // Validate data size
-    uint64_t num_elements_in_thread_block = kNumLoopUnroll * num_threads_per_block;
-    uint64_t num_bytes_in_thread_block = num_elements_in_thread_block * sizeof(T);
+    // Each thread processes 128 bits (16 bytes) for optimal memory bandwidth.
+    // For double: uses double2 (16 bytes). For float: would use float4 (16 bytes).
+    constexpr uint64_t kBytesPerThread = 16; // 128-bit aligned access
+    uint64_t num_bytes_in_thread_block = num_threads_per_block * kBytesPerThread;
     if (args->size % num_bytes_in_thread_block) {
         std::cerr << "RunCopy: Data size should be multiple of " << num_bytes_in_thread_block << std::endl;
         return -1;
@@ -448,30 +450,30 @@ int GpuStream::RunStreamKernel(std::unique_ptr<BenchArgs<T>> &args, Kernel kerne
 
         switch (kernel) {
         case Kernel::kCopy:
-            CopyKernel<<<num_thread_blocks, num_threads_per_block, 0, args->sub.stream>>>(
-                reinterpret_cast<T *>(args->sub.gpu_buf_ptrs[2].get()),
-                reinterpret_cast<T *>(args->sub.gpu_buf_ptrs[0].get()));
+            CopyKernel<T><<<num_thread_blocks, num_threads_per_block, 0, args->sub.stream>>>(
+                reinterpret_cast<VecT<T> *>(args->sub.gpu_buf_ptrs[2].get()),
+                reinterpret_cast<const VecT<T> *>(args->sub.gpu_buf_ptrs[0].get()));
             args->sub.kernel_name = "COPY";
             break;
         case Kernel::kScale:
-            ScaleKernel<<<num_thread_blocks, num_threads_per_block, 0, args->sub.stream>>>(
-                reinterpret_cast<T *>(args->sub.gpu_buf_ptrs[2].get()),
-                reinterpret_cast<T *>(args->sub.gpu_buf_ptrs[0].get()), static_cast<T>(scalar));
+            ScaleKernel<T><<<num_thread_blocks, num_threads_per_block, 0, args->sub.stream>>>(
+                reinterpret_cast<VecT<T> *>(args->sub.gpu_buf_ptrs[2].get()),
+                reinterpret_cast<const VecT<T> *>(args->sub.gpu_buf_ptrs[0].get()), static_cast<T>(scalar));
             args->sub.kernel_name = "SCALE";
             break;
         case Kernel::kAdd:
-            AddKernel<<<num_thread_blocks, num_threads_per_block, 0, args->sub.stream>>>(
-                reinterpret_cast<T *>(args->sub.gpu_buf_ptrs[2].get()),
-                reinterpret_cast<T *>(args->sub.gpu_buf_ptrs[0].get()),
-                reinterpret_cast<T *>(args->sub.gpu_buf_ptrs[1].get()));
+            AddKernel<T><<<num_thread_blocks, num_threads_per_block, 0, args->sub.stream>>>(
+                reinterpret_cast<VecT<T> *>(args->sub.gpu_buf_ptrs[2].get()),
+                reinterpret_cast<const VecT<T> *>(args->sub.gpu_buf_ptrs[0].get()),
+                reinterpret_cast<const VecT<T> *>(args->sub.gpu_buf_ptrs[1].get()));
             size_factor = 3;
             args->sub.kernel_name = "ADD";
             break;
         case Kernel::kTriad:
-            TriadKernel<<<num_thread_blocks, num_threads_per_block, 0, args->sub.stream>>>(
-                reinterpret_cast<T *>(args->sub.gpu_buf_ptrs[2].get()),
-                reinterpret_cast<T *>(args->sub.gpu_buf_ptrs[0].get()),
-                reinterpret_cast<T *>(args->sub.gpu_buf_ptrs[1].get()), static_cast<T>(scalar));
+            TriadKernel<T><<<num_thread_blocks, num_threads_per_block, 0, args->sub.stream>>>(
+                reinterpret_cast<VecT<T> *>(args->sub.gpu_buf_ptrs[2].get()),
+                reinterpret_cast<const VecT<T> *>(args->sub.gpu_buf_ptrs[0].get()),
+                reinterpret_cast<const VecT<T> *>(args->sub.gpu_buf_ptrs[1].get()), static_cast<T>(scalar));
             size_factor = 3;
             args->sub.kernel_name = "TRIAD";
             break;
@@ -637,17 +639,25 @@ int GpuStream::Run() {
     }
 
     // Run on CUDA device 0 (the visible GPU assigned by CUDA_VISIBLE_DEVICES).
-    auto args = std::make_unique<BenchArgs<double>>();
-    args->gpu_id = 0;
-    cudaGetDeviceProperties(&args->gpu_device_prop, 0);
-
-    args->num_warm_up = opts_.num_warm_up;
-    args->num_loops = opts_.num_loops;
-    args->size = opts_.size;
-    args->check_data = opts_.check_data;
-
-    // add data to vector
-    bench_args_.emplace_back(std::move(args));
+    if (opts_.data_type == "float") {
+        auto args = std::make_unique<BenchArgs<float>>();
+        args->gpu_id = 0;
+        cudaGetDeviceProperties(&args->gpu_device_prop, 0);
+        args->num_warm_up = opts_.num_warm_up;
+        args->num_loops = opts_.num_loops;
+        args->size = opts_.size;
+        args->check_data = opts_.check_data;
+        bench_args_.emplace_back(std::move(args));
+    } else {
+        auto args = std::make_unique<BenchArgs<double>>();
+        args->gpu_id = 0;
+        cudaGetDeviceProperties(&args->gpu_device_prop, 0);
+        args->num_warm_up = opts_.num_warm_up;
+        args->num_loops = opts_.num_loops;
+        args->size = opts_.size;
+        args->check_data = opts_.check_data;
+        bench_args_.emplace_back(std::move(args));
+    }
 
     bool has_error = false;
     // Run the benchmark for all the configured data

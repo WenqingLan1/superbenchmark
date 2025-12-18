@@ -2,6 +2,7 @@ STREAM Benchmark
 Buffer size(bytes): 4294967296
 Number of warm up runs: 10
 Number of loops: 40
+Data type: double
 Check data: No
 
 Device 0: "NVIDIA Graphics Device"  152 SMs(10.0)  Memory: 4000MHz x 8192-bit = 8192 GB/s PEAK   ECC is ON

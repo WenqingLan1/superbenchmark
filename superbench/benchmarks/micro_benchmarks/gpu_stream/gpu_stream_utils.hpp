@@ -31,7 +31,6 @@ unsigned long long getCurrentTimestampInMicroseconds();
 namespace stream_config {
 constexpr std::array<int, 4> kThreadsPerBlock = {128, 256, 512, 1024}; // Threads per block
 constexpr uint64_t kDefaultBufferSizeInBytes = 4294967296;             // Default buffer size 4GB
-constexpr int kNumLoopUnroll = 2;                                      // Unroll depth in SM copy kernel
 constexpr int kNumBuffers = 3;                                         // Number of buffers for triad, add kernel
 constexpr int kNumValidationBuffers = 4;                          // Number of validation buffers, one for each kernel
 constexpr int kUInt8Mod = 256;                                    // Modulo for unsigned long data type
@@ -118,6 +117,9 @@ struct Opts {
 
     // Whether check data after copy.
     bool check_data = false;
+
+    // Data type for the benchmark ("float" or "double").
+    std::string data_type = "double";
 };
 
 std::string KernelToString(int); // Function to convert enum to string
