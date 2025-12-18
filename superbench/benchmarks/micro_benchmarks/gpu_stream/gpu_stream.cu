@@ -235,15 +235,15 @@ template <typename T> int GpuStream::PrepareBufAndStream(std::unique_ptr<BenchAr
     cudaError_t cuda_err = cudaSuccess;
 
     if (args->check_data) {
-        // Generate data to copy
-        args->sub.data_buf = static_cast<T *>(numa_alloc_onnode(args->size * sizeof(T), args->numa_id));
+        // Generate data to copy - use local NUMA node for best CPU access
+        args->sub.data_buf = static_cast<T *>(numa_alloc_local(args->size * sizeof(T)));
 
         for (int j = 0; j < args->size / sizeof(T); j++) {
             args->sub.data_buf[j] = static_cast<T>(j % kUInt8Mod);
         }
 
-        // Allocate check buffer
-        args->sub.check_buf = static_cast<T *>(numa_alloc_onnode(args->size * sizeof(T), args->numa_id));
+        // Allocate check buffer on local NUMA node
+        args->sub.check_buf = static_cast<T *>(numa_alloc_local(args->size * sizeof(T)));
     }
 
     // Allocate buffers
@@ -583,9 +583,9 @@ int GpuStream::RunStream(std::unique_ptr<BenchArgs<T>> &args, const std::string 
 
     // output formatted results to stdout
     // Tags are of format:
-    // STREAM_<Kernelname>_datatype_gpu_<gpu_id>_buffer_<buffer_size>_block_<block_size>
+    // STREAM_<Kernelname>_datatype_buffer_<buffer_size>_block_<block_size>
     for (int i = 0; i < args->sub.times_in_ms.size(); i++) {
-        std::string tag = "STREAM_" + KernelToString(i) + "_" + data_type + "_gpu_" + std::to_string(args->gpu_id) +
+        std::string tag = "STREAM_" + KernelToString(i) + "_" + data_type +
                           "_buffer_" + std::to_string(args->size);
         for (int j = 0; j < args->sub.times_in_ms[i].size(); j++) {
             // Calculate and display bandwidth
@@ -608,9 +608,9 @@ int GpuStream::RunStream(std::unique_ptr<BenchArgs<T>> &args, const std::string 
 /**
  * @brief Runs the Stream benchmark.
  *
- * @details This function processes the input args, validates and composes the BenchArgs structure for the
- availavble
- * GPUs, and runs the benchmark.
+ * @details This function processes the input args, validates and composes the BenchArgs structure for
+ * the first visible GPU (CUDA device 0). When running under Superbench's default_local_mode,
+ * CUDA_VISIBLE_DEVICES is set per process, so device 0 maps to the assigned physical GPU.
  *
  * @return int The status code indicating success or failure of the benchmark execution.
  * */
@@ -631,23 +631,23 @@ int GpuStream::Run() {
         return ret;
     }
 
-    // find all GPUs and compose the Benchmarking data structure
-    for (int j = 0; j < gpu_count; j++) {
-        auto args = std::make_unique<BenchArgs<double>>();
-        args->numa_id = 0;
-        args->gpu_id = j;
-        cudaGetDeviceProperties(&args->gpu_device_prop, j);
-
-        args->num_warm_up = opts_.num_warm_up;
-        args->num_loops = opts_.num_loops;
-        args->size = opts_.size;
-        args->check_data = opts_.check_data;
-        args->numa_id = 0;
-        args->gpu_id = j;
-
-        // add data to vector
-        bench_args_.emplace_back(std::move(args));
+    if (gpu_count < 1) {
+        std::cerr << "Run::No GPU available" << std::endl;
+        return -1;
     }
+
+    // Run on CUDA device 0 (the visible GPU assigned by CUDA_VISIBLE_DEVICES).
+    auto args = std::make_unique<BenchArgs<double>>();
+    args->gpu_id = 0;
+    cudaGetDeviceProperties(&args->gpu_device_prop, 0);
+
+    args->num_warm_up = opts_.num_warm_up;
+    args->num_loops = opts_.num_loops;
+    args->size = opts_.size;
+    args->check_data = opts_.check_data;
+
+    // add data to vector
+    bench_args_.emplace_back(std::move(args));
 
     bool has_error = false;
     // Run the benchmark for all the configured data
@@ -667,14 +667,6 @@ int GpuStream::Run() {
 
                 // Print device info with both the memory clock and peak bandwidth
                 PrintCudaDeviceInfo(curr_args->gpu_id, curr_args->gpu_device_prop, memory_clock_mhz, peak_bw);
-
-                // Set the NUMA node
-                ret = numa_run_on_node(curr_args->numa_id);
-                if (ret != 0) {
-                    std::cerr << "Run::numa_run_on_node error: " << errno << std::endl;
-                    has_error = true;
-                    return;
-                }
 
                 // Run the stream benchmark for the configured data, passing the peak bandwidth
                 if constexpr (std::is_same_v<std::decay_t<decltype(*curr_args)>, BenchArgs<float>>) {

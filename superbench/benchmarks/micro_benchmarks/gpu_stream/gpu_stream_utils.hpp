@@ -83,10 +83,7 @@ template <typename T> struct SubBenchArgs {
 // Arguments for each benchmark run.
 template <typename T> struct BenchArgs {
 
-    // NUMA node under which the benchmark is done.
-    uint64_t numa_id = 0;
-
-    // GPU ID for device.
+    // GPU ID for device (always 0 - actual GPU determined by CUDA_VISIBLE_DEVICES).
     int gpu_id = 0;
 
     // GPU device info
