@@ -587,8 +587,7 @@ int GpuStream::RunStream(std::unique_ptr<BenchArgs<T>> &args, const std::string 
     // Tags are of format:
     // STREAM_<Kernelname>_datatype_buffer_<buffer_size>_block_<block_size>
     for (int i = 0; i < args->sub.times_in_ms.size(); i++) {
-        std::string tag = "STREAM_" + KernelToString(i) + "_" + data_type +
-                          "_buffer_" + std::to_string(args->size);
+        std::string tag = "STREAM_" + KernelToString(i) + "_" + data_type + "_buffer_" + std::to_string(args->size);
         for (int j = 0; j < args->sub.times_in_ms[i].size(); j++) {
             // Calculate and display bandwidth
             double bw = args->size * args->num_loops / args->sub.times_in_ms[i][j] / 1e6;

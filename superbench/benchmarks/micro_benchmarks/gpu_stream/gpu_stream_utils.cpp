@@ -39,12 +39,8 @@ std::string KernelToString(int kernel_idx) {
  * @return void.
  * */
 void PrintUsage() {
-    std::cout << "Usage: gpu_stream "
-              << "--size <size in bytes> "
-              << "--num_warm_up <num_warm_up> "
-              << "--num_loops <num_loops> "
-              << "[--data_type <float|double>] "
-              << "[--check_data]" << std::endl;
+    std::cout << "Usage: gpu_stream " << "--size <size in bytes> " << "--num_warm_up <num_warm_up> "
+              << "--num_loops <num_loops> " << "[--data_type <float|double>] " << "[--check_data]" << std::endl;
 }
 
 /**
