@@ -31,7 +31,7 @@ class GpuStreamBenchmarkTest(BenchmarkTestCase, unittest.TestCase):
         num_loops = 10
         size = 25769803776
 
-        parameters = '--num_warm_up %d --num_loops %d --size %d ' \
+        parameters = '--num_warm_up %d --num_loops %d --size %d --data_type double ' \
             '--check_data' % \
             (num_warm_up, num_loops, size)
         benchmark = benchmark_class(benchmark_name, parameters=parameters)
@@ -49,6 +49,7 @@ class GpuStreamBenchmarkTest(BenchmarkTestCase, unittest.TestCase):
         assert (benchmark._args.num_warm_up == num_warm_up)
         assert (benchmark._args.num_loops == num_loops)
         assert (benchmark._args.check_data)
+        assert (benchmark._args.data_type == 'double')
 
         # Check command
         assert (1 == len(benchmark._commands))
@@ -56,6 +57,7 @@ class GpuStreamBenchmarkTest(BenchmarkTestCase, unittest.TestCase):
         assert ('--size %d' % size in benchmark._commands[0])
         assert ('--num_warm_up %d' % num_warm_up in benchmark._commands[0])
         assert ('--num_loops %d' % num_loops in benchmark._commands[0])
+        assert ('--data_type double' in benchmark._commands[0])
         assert ('--check_data' in benchmark._commands[0])
 
     @decorator.cuda_test
