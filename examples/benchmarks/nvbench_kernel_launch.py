@@ -1,7 +1,11 @@
 # Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
+# Licensed under the MIT license.
 
-"""Example of NVBench Kernel Launch benchmark."""
+"""Micro benchmark example for NVBench Kernel Launch.
+
+Commands to run:
+  python3 examples/benchmarks/nvbench_kernel_launch.py
+"""
 
 from superbench.benchmarks import BenchmarkRegistry, Platform
 from superbench.common.utils import logger

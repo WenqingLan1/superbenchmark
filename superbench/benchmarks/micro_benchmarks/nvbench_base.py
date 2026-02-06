@@ -11,7 +11,7 @@ from superbench.benchmarks.micro_benchmarks.micro_base import MicroBenchmarkWith
 
 
 def parse_time_to_us(raw: str) -> float:
-    """Helper: parse '123.45 us', '678.9 ns', '0.12 ms' → float µs."""
+    """Helper: parse '123.45 us', '678.9 ns', '0.12 ms', '1.5 s' → float µs."""
     raw = raw.strip()
     if raw.endswith('%'):
         return float(raw[:-1])
@@ -20,9 +20,11 @@ def parse_time_to_us(raw: str) -> float:
     if not m:
         return float(raw)
     val, unit = float(m.group(1)), (m.group(2) or 'us')
-    if unit == 'ns':
+    if unit == 's':
+        return val * 1e6
+    elif unit == 'ns':
         return val / 1e3
-    if unit == 'ms':
+    elif unit == 'ms':
         return val * 1e3
     return val
 

@@ -1,14 +1,16 @@
 # Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
+# Licensed under the MIT license.
 
-"""Example of NVBench Sleep Kernel benchmark."""
+"""Micro benchmark example for NVBench Sleep Kernel.
+
+Commands to run:
+  python3 examples/benchmarks/nvbench_sleep_kernel.py
+"""
 
 from superbench.benchmarks import BenchmarkRegistry, Platform
 from superbench.common.utils import logger
 
-
-def main():
-    """Main method to run the nvbench sleep kernel benchmark."""
+if __name__ == '__main__':
     context = BenchmarkRegistry.create_benchmark_context(
         'nvbench-sleep-kernel', platform=Platform.CUDA, parameters='--duration_us "[25,50,75]" --timeout 10'
     )
@@ -20,9 +22,3 @@ def main():
                 benchmark.name, benchmark.return_code, benchmark.result
             )
         )
-    else:
-        logger.error('benchmark: nvbench-sleep-kernel launch failed.')
-
-
-if __name__ == '__main__':
-    main()
