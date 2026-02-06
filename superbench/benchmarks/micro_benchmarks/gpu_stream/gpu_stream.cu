@@ -236,14 +236,14 @@ template <typename T> int GpuStream::PrepareBufAndStream(std::unique_ptr<BenchAr
 
     if (args->check_data) {
         // Generate data to copy - use local NUMA node for best CPU access
-        args->sub.data_buf = static_cast<T *>(numa_alloc_local(args->size * sizeof(T)));
+        args->sub.data_buf = static_cast<T *>(numa_alloc_local(args->size));
 
         for (int j = 0; j < args->size / sizeof(T); j++) {
             args->sub.data_buf[j] = static_cast<T>(j % kUInt8Mod);
         }
 
         // Allocate check buffer on local NUMA node
-        args->sub.check_buf = static_cast<T *>(numa_alloc_local(args->size * sizeof(T)));
+        args->sub.check_buf = static_cast<T *>(numa_alloc_local(args->size));
     }
 
     // Allocate buffers
@@ -257,7 +257,7 @@ template <typename T> int GpuStream::PrepareBufAndStream(std::unique_ptr<BenchAr
     // Allocate buffers
     for (auto &buf_ptr : args->sub.gpu_buf_ptrs) {
         T *raw_ptr = nullptr;
-        cuda_err = GpuMallocDataBuf(&raw_ptr, args->size * sizeof(T));
+        cuda_err = GpuMallocDataBuf(&raw_ptr, args->size);
         if (cuda_err != cudaSuccess) {
             std::cerr << "PrepareBufAndStream::cudaMalloc error: " << cuda_err << std::endl;
             return -1;
@@ -425,7 +425,7 @@ int GpuStream::RunStreamKernel(std::unique_ptr<BenchArgs<T>> &args, Kernel kerne
     constexpr uint64_t kBytesPerThread = 16; // 128-bit aligned access
     uint64_t num_bytes_in_thread_block = num_threads_per_block * kBytesPerThread;
     if (args->size % num_bytes_in_thread_block) {
-        std::cerr << "RunCopy: Data size should be multiple of " << num_bytes_in_thread_block << std::endl;
+        std::cerr << "RunStreamKernel: Data size should be multiple of " << num_bytes_in_thread_block << std::endl;
         return -1;
     }
     num_thread_blocks = args->size / num_bytes_in_thread_block;
